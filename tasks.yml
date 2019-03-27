@@ -1,0 +1,44 @@
+- name: User setup - kube node
+  hosts: kube_master
+  become: true
+  gather_facts: no
+  tasks:
+   - name: Get User Variables
+     include_vars:
+          file: /etc/ansible/playbooks/user-namespace/vars.yml
+       
+   - name: Create user 
+     user:
+      name: "{{ item.name }}" 
+      password: $6$M3QycqlYPJMUSfqQ$Uyz8aiE2GFkpKzvl/3IeQ2a.kjMhg1K7bPufeuKsjZaGHW0A7YsTfPyLGgwNhnaadbiUZpKUo03pEF.3H3xiu0
+      groups: wheel   
+      state: present
+     with_items: "{{ Users }}"
+
+   - name: Allow wheel group to have passwordless sudo
+     lineinfile:
+        dest: /etc/sudoers
+        state: present
+        regexp: '^%wheel'
+        line: '%wheel ALL=(ALL) NOPASSWD: ALL'
+
+   - name: create kube config directory
+     file: 
+       path: "/home/{{ item.name }}/.kube"
+       state: directory 
+     with_items: "{{ Users }}"
+
+   - name: copy kubeconfig file 
+     copy:
+       remote_src: yes
+       src: ~/.kube/config 
+       dest: "/home/{{ item.name }}/.kube"
+     with_items: "{{ Users }}"
+
+   - name: Create k8s namespace for new user
+     k8s:
+      name: "{{ item.name }}"
+      api_version: v1
+      kind: Namespace
+      state: present
+     with_items: "{{ Users }}"   
