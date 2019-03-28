@@ -35,6 +35,12 @@
        dest: "/home/{{ item.name }}/.kube"
      with_items: "{{ Users }}"
 
+   - name: Clone Git repo  
+     git:
+      repo: 'https://github.com/auto-store/manifests.git'
+      dest: "/home/{{ item.name }}/manifests"
+     with_items: "{{ Users }}"
+
    - name: Create k8s namespace for new user
      k8s:
       name: "{{ item.name }}"
